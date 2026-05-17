@@ -20,7 +20,8 @@ const REFRESH_COOKIE_MAX_AGE = parseExpiryToMs(env.JWT_REFRESH_EXPIRES_IN);
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  // 'none' required for cross-origin (Netlify frontend → Render backend)
+  sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
 };
 
 export const authController = {
@@ -39,8 +40,8 @@ export const authController = {
   }),
 
   logout: catchAsync(async (_req: Request, res: Response) => {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    res.clearCookie('accessToken', COOKIE_OPTIONS);
+    res.clearCookie('refreshToken', COOKIE_OPTIONS);
     sendSuccess(res, { message: 'Logged out successfully' });
   }),
 
