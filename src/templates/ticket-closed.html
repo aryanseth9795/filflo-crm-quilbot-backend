@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f5; margin: 0; padding: 20px; }
+    .card { background: #fff; border-radius: 12px; padding: 32px; max-width: 560px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .badge-closed { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; background: #f0fdf4; color: #15803d; }
+    .ticket-id { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 4px; }
+    .meta { font-size: 13px; color: #64748b; margin: 0 0 20px; }
+    .section { background: #f8fafc; border-radius: 8px; padding: 14px 16px; margin: 16px 0; }
+    .section-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .section-value { font-size: 14px; color: #334155; }
+    .remark-box { background: #eff6ff; border-left: 3px solid #2563eb; border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 16px 0; }
+    .footer { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="meta">Filflo CRM — Ticket Closed</p>
+    <h1 class="ticket-id">{{ticketNumber}}</h1>
+    <span class="badge-closed">CLOSED ✓</span>
+    <div class="section">
+      <div class="section-label">Brand / Project</div>
+      <div class="section-value">{{projectName}}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Resolution Time</div>
+      <div class="section-value">{{resolutionHrs}} hours</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Closed By</div>
+      <div class="section-value">{{closedByName}}</div>
+    </div>
+    {{#if supportRemark}}
+    <div class="remark-box">
+      <div class="section-label">Support Remark for Developer</div>
+      <div class="section-value">{{supportRemark}}</div>
+    </div>
+    {{/if}}
+    {{#if clientFeedback}}
+    <div class="section">
+      <div class="section-label">Client Feedback</div>
+      <div class="section-value">{{clientFeedback}}</div>
+    </div>
+    {{/if}}
+    <div class="footer">Filflo CRM · Great work! 🎉</div>
+  </div>
+</body>
+</html>

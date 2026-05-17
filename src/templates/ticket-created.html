@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f5; margin: 0; padding: 20px; }
+    .card { background: #fff; border-radius: 12px; padding: 32px; max-width: 560px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .badge-open { background: #eff6ff; color: #2563eb; }
+    .badge-p0 { background: #fef2f2; color: #dc2626; }
+    .badge-p1 { background: #fff7ed; color: #ea580c; }
+    .badge-p2 { background: #fefce8; color: #ca8a04; }
+    .badge-p3 { background: #f0fdf4; color: #16a34a; }
+    .ticket-id { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 4px; }
+    .meta { font-size: 13px; color: #64748b; margin: 0 0 20px; }
+    .section { background: #f8fafc; border-radius: 8px; padding: 14px 16px; margin: 16px 0; }
+    .section-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .section-value { font-size: 14px; color: #334155; }
+    .btn { display: inline-block; background: #2563eb; color: #fff !important; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; margin-top: 20px; }
+    .footer { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 24px; }
+    .attachment-count { font-size: 13px; color: #6366f1; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="meta">Filflo CRM — New Ticket</p>
+    <h1 class="ticket-id">{{ticketNumber}}</h1>
+    <div>
+      <span class="badge badge-open">OPEN</span>
+      &nbsp;
+      <span class="badge badge-{{priorityClass}}">{{priority}}</span>
+    </div>
+    <div class="section">
+      <div class="section-label">Brand / Project</div>
+      <div class="section-value">{{projectName}}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Request Type</div>
+      <div class="section-value">{{requestType}}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Description</div>
+      <div class="section-value">{{description}}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Raised By</div>
+      <div class="section-value">{{raisedByName}} &lt;{{raisedByEmail}}&gt;</div>
+    </div>
+    {{#if requiredDeliveryDays}}
+    <div class="section">
+      <div class="section-label">Required Delivery</div>
+      <div class="section-value">{{requiredDeliveryDays}} day(s)</div>
+    </div>
+    {{/if}}
+    {{#if attachmentCount}}
+    <div class="section">
+      <div class="section-label">Attachments</div>
+      <div class="section-value attachment-count">📎 {{attachmentCount}} file(s) attached</div>
+    </div>
+    {{/if}}
+    <a href="{{ticketUrl}}" class="btn">Review Ticket →</a>
+    <div class="footer">Filflo CRM · Action required by Admin</div>
+  </div>
+</body>
+</html>
