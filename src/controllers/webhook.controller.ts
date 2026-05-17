@@ -8,6 +8,15 @@ export const webhookController = {
     // Respond immediately (GitHub expects < 10s response)
     res.status(200).json({ success: true, message: 'Webhook received' });
 
+    // Short-circuit non-PR events (ping on registration, push, issues, etc.)
+    // so they don't run through signature verification + action parsing only
+    // to be silently no-op'd downstream.
+    const eventType = req.headers['x-github-event'] as string | undefined;
+    if (eventType !== 'pull_request') {
+      logger.info(`Ignoring non-PR webhook event: ${eventType}`);
+      return;
+    }
+
     // Process asynchronously to avoid timeout
     const projectId = req.params['projectId'] as string;
     const signature = req.headers['x-hub-signature-256'] as string | undefined;

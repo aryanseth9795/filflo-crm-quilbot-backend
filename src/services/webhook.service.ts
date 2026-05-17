@@ -65,22 +65,30 @@ export const webhookService = {
         if (!ticket) { results.push({ ticketNumber, status: 'not_found' }); continue; }
         if (ticket.projectId.toString() !== projectId) { results.push({ ticketNumber, status: 'project_mismatch' }); continue; }
 
-        // Idempotency check
-        const existing = await PREvent.findOne({ prNumber: payload.number, projectId, action });
-        if (existing) { results.push({ ticketNumber, status: 'duplicate_skipped' }); continue; }
-
         const currentRevision = ticket.prRevisionCount ?? 0;
 
-        await PREvent.create({
-          ticketId: ticket._id,
-          projectId,
-          prNumber: payload.number,
-          prUrl: payload.pull_request.html_url,
-          repoFullName: payload.repository.full_name,
-          action,
-          triggeredBy: payload.pull_request.user.login,
-          revisionNumber: currentRevision + (action === 'opened' ? 1 : 0),
-        });
+        // Atomic idempotency — relies on PREvent's unique index on
+        // { prNumber, projectId, action }. If another concurrent delivery
+        // already inserted this PREvent, E11000 fires and we skip before
+        // touching Ticket, TicketEvent, or notificationService.
+        try {
+          await PREvent.create({
+            ticketId: ticket._id,
+            projectId,
+            prNumber: payload.number,
+            prUrl: payload.pull_request.html_url,
+            repoFullName: payload.repository.full_name,
+            action,
+            triggeredBy: payload.pull_request.user.login,
+            revisionNumber: currentRevision + (action === 'opened' ? 1 : 0),
+          });
+        } catch (err: any) {
+          if (err?.code === 11000) {
+            results.push({ ticketNumber, status: 'duplicate_skipped' });
+            continue;
+          }
+          throw err;
+        }
 
         const dev = ticket.assignedTo as any;
         const raiser = ticket.raisedBy as any;
