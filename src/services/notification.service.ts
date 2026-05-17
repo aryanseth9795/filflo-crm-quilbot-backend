@@ -4,7 +4,8 @@ import { getEmailProvider } from '../providers';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
-const TEMPLATE_DIR = path.join(__dirname, '../templates');
+// process.cwd() is the server/ directory in both dev and prod (Render starts the process there)
+const TEMPLATE_DIR = path.join(process.cwd(), 'src/templates');
 
 function loadTemplate(name: string): string {
   return fs.readFileSync(path.join(TEMPLATE_DIR, name), 'utf-8');

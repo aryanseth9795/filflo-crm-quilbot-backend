@@ -8,6 +8,7 @@ import { AppError } from '../utils/AppError';
 import { getMediaProvider } from '../providers';
 import { notificationService } from './notification.service';
 import { eventService } from './event.service';
+import { logger } from '../config/logger';
 import { MAX_TOTAL_BYTES } from '../middleware/upload.middleware';
 import {
   CreateTicketInput,
@@ -147,23 +148,27 @@ export const ticketService = {
       performedByName: raiser?.name,
     });
 
-    // Notify all admins
-    const admins = await getAllAdmins();
-    if (admins.length > 0) {
-      const project = await Project.findById(data.projectId).select('name').lean();
-      await notificationService.ticketCreated({
-        adminEmails: admins.map(a => a.email),
-        ticketId: ticket._id.toString(),
-        ticketNumber,
-        projectName: project?.name ?? 'Unknown',
-        requestType: data.requestType,
-        description: data.description,
-        priority: data.priority,
-        raisedByName: raiser?.name ?? 'Unknown',
-        raisedByEmail: raiser?.email ?? '',
-        requiredDeliveryDays: data.requiredDeliveryDays,
-        attachmentCount: attachments.length,
-      });
+    // Notify all admins (non-blocking — don't fail ticket creation if email fails)
+    try {
+      const admins = await getAllAdmins();
+      if (admins.length > 0) {
+        const project = await Project.findById(data.projectId).select('name').lean();
+        await notificationService.ticketCreated({
+          adminEmails: admins.map(a => a.email),
+          ticketId: ticket._id.toString(),
+          ticketNumber,
+          projectName: project?.name ?? 'Unknown',
+          requestType: data.requestType,
+          description: data.description,
+          priority: data.priority,
+          raisedByName: raiser?.name ?? 'Unknown',
+          raisedByEmail: raiser?.email ?? '',
+          requiredDeliveryDays: data.requiredDeliveryDays,
+          attachmentCount: attachments.length,
+        });
+      }
+    } catch (err: any) {
+      logger.error('[TicketService] Failed to send ticket created notification:', err.message);
     }
 
     await recalcProjectMetrics(data.projectId);
@@ -263,19 +268,23 @@ export const ticketService = {
 
     const project = ticket.projectId as any;
     const admin = await User.findById(adminId).select('name').lean();
-    await notificationService.ticketAssigned({
-      developerEmail: dev.email,
-      developerName: dev.name,
-      ticketId: ticket._id.toString(),
-      ticketNumber: ticket.ticketNumber,
-      projectName: project?.name ?? '',
-      requestType: ticket.requestType,
-      description: ticket.description,
-      priority: ticket.priority,
-      adminNotes: data.adminNotes,
-      requiredDeliveryDays: ticket.requiredDeliveryDays,
-      attachmentCount: ticket.attachments.length,
-    });
+    try {
+      await notificationService.ticketAssigned({
+        developerEmail: dev.email,
+        developerName: dev.name,
+        ticketId: ticket._id.toString(),
+        ticketNumber: ticket.ticketNumber,
+        projectName: project?.name ?? '',
+        requestType: ticket.requestType,
+        description: ticket.description,
+        priority: ticket.priority,
+        adminNotes: data.adminNotes,
+        requiredDeliveryDays: ticket.requiredDeliveryDays,
+        attachmentCount: ticket.attachments.length,
+      });
+    } catch (err: any) {
+      logger.error('[TicketService] Failed to send ticket assigned notification:', err.message);
+    }
 
     await eventService.logEvent({
       ticketId: ticket._id.toString(),
@@ -300,13 +309,17 @@ export const ticketService = {
 
     const raiser = ticket.raisedBy as any;
     const project = ticket.projectId as any;
-    await notificationService.ticketRejected({
-      supportEmail: raiser.email,
-      ticketId: ticket._id.toString(),
-      ticketNumber: ticket.ticketNumber,
-      projectName: project?.name ?? '',
-      rejectionReason: data.rejectionReason,
-    });
+    try {
+      await notificationService.ticketRejected({
+        supportEmail: raiser.email,
+        ticketId: ticket._id.toString(),
+        ticketNumber: ticket.ticketNumber,
+        projectName: project?.name ?? '',
+        rejectionReason: data.rejectionReason,
+      });
+    } catch (err: any) {
+      logger.error('[TicketService] Failed to send ticket rejected notification:', err.message);
+    }
 
     await eventService.logEvent({
       ticketId: ticket._id.toString(),
@@ -415,17 +428,21 @@ export const ticketService = {
         performedByName: triggeredByUser?.name,
         metadata: { notes: data.notes },
       });
-      await notificationService.prMerged({
-        supportEmail: raiser.email,
-        developerEmail: dev.email,
-        ticketId: ticket._id.toString(),
-        ticketNumber: ticket.ticketNumber,
-        projectName: project?.name ?? '',
-        prNumber: 0, // PR number from webhook event
-        prUrl: '',
-        triggeredBy: (await User.findById(adminId).select('name').lean())?.name ?? 'Admin',
-        attachmentCount: ticket.attachments.length,
-      });
+      try {
+        await notificationService.prMerged({
+          supportEmail: raiser.email,
+          developerEmail: dev.email,
+          ticketId: ticket._id.toString(),
+          ticketNumber: ticket.ticketNumber,
+          projectName: project?.name ?? '',
+          prNumber: 0,
+          prUrl: '',
+          triggeredBy: (await User.findById(adminId).select('name').lean())?.name ?? 'Admin',
+          attachmentCount: ticket.attachments.length,
+        });
+      } catch (err: any) {
+        logger.error('[TicketService] Failed to send PR merged notification:', err.message);
+      }
     } else {
       ticket.status = 'pr_rejected';
       ticket.prStatus = 'rejected';
@@ -439,14 +456,18 @@ export const ticketService = {
         performedByName: triggeredByUser?.name,
         metadata: { notes: data.notes, revisionCount: ticket.prRevisionCount },
       });
-      await notificationService.prRejected({
-        developerEmail: dev.email,
-        ticketId: ticket._id.toString(),
-        ticketNumber: ticket.ticketNumber,
-        projectName: project?.name ?? '',
-        rejectionReason: data.notes ?? 'No reason provided',
-        revisionCount: ticket.prRevisionCount,
-      });
+      try {
+        await notificationService.prRejected({
+          developerEmail: dev.email,
+          ticketId: ticket._id.toString(),
+          ticketNumber: ticket.ticketNumber,
+          projectName: project?.name ?? '',
+          rejectionReason: data.notes ?? 'No reason provided',
+          revisionCount: ticket.prRevisionCount,
+        });
+      } catch (err: any) {
+        logger.error('[TicketService] Failed to send PR rejected notification:', err.message);
+      }
     }
 
     return ticket;
@@ -500,17 +521,21 @@ export const ticketService = {
     });
 
     if (dev?.email) {
-      await notificationService.ticketClosed({
-        developerEmail: dev.email,
-        adminEmails: admins.map(a => a.email),
-        ticketId: ticket._id.toString(),
-        ticketNumber: ticket.ticketNumber,
-        projectName: project?.name ?? '',
-        resolutionHrs,
-        closedByName: closer?.name ?? 'Support',
-        supportRemark: ticket.supportRemark,
-        clientFeedback: ticket.clientFeedback,
-      });
+      try {
+        await notificationService.ticketClosed({
+          developerEmail: dev.email,
+          adminEmails: admins.map(a => a.email),
+          ticketId: ticket._id.toString(),
+          ticketNumber: ticket.ticketNumber,
+          projectName: project?.name ?? '',
+          resolutionHrs,
+          closedByName: closer?.name ?? 'Support',
+          supportRemark: ticket.supportRemark,
+          clientFeedback: ticket.clientFeedback,
+        });
+      } catch (err: any) {
+        logger.error('[TicketService] Failed to send ticket closed notification:', err.message);
+      }
     }
 
     await recalcProjectMetrics((ticket.projectId as any)._id.toString());
