@@ -18,11 +18,17 @@ export const verifyGitHubSignature = (
 
 /**
  * Extract all ticket numbers from a PR title.
- * Matches brand-prefixed IDs: [FILFLO-001], [ACME-042], [MY-BRAND-003]
- * Format: [UPPERCASE-LETTERS-NUMBER] in PR title
+ * Matches brand-prefixed IDs of the form `LETTERS-DIGITS` (e.g. FILFLO-001, MY-BRAND-003)
+ * appearing either bare or wrapped in brackets/parens — all of these work:
+ *   "FILFLO-001 fix login"          → ["FILFLO-001"]
+ *   "[FILFLO-001] fix login"        → ["FILFLO-001"]
+ *   "Hotfix FILFLO-001 and ACME-42" → ["FILFLO-001", "ACME-42"]
+ *
+ * Loose matching can produce false positives (e.g. version strings like "v2-1"),
+ * but downstream `Ticket.findOne({ ticketNumber })` filters them out as `not_found`.
  */
 export const extractTicketNumbers = (prTitle: string): string[] => {
-  const regex = /\[([A-Z][A-Z0-9-]*-\d+)\]/gi;
+  const regex = /\b([A-Z][A-Z0-9-]*-\d+)\b/gi;
   const ids: string[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(prTitle)) !== null) {
