@@ -26,7 +26,7 @@ app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use('/api/webhooks', webhookRoutes);
 
 // General middleware
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compression());
@@ -47,6 +47,13 @@ app.use('/api/reports', reportRoutes);
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
+
+setInterval(() => {
+  fetch(`${process.env.SERVER_URL}/health`)
+    .then((res) => res.json())
+    .then((data) => console.log(data, "check"))
+    .catch((err) => console.error(err));
+}, 14 * 60000);
 
 // Global error handler
 app.use(errorHandler);
